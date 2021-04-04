@@ -3,9 +3,13 @@
 import pandas as pd
 import pickle
 import re
+#%%
+#Future dataframe columns name list
 columns=['White_Elo','Black_Elo','Result', 'Opening','Variation','Time_Control',
        'Increment','Evaluation','Players_Clock','Termination','Moves']
+#dictionary to store the data
 data={c:[] for c in columns}
+#Time to revome data of interest in the dataframe
 games = pickle.load(open('games.pickle','rb'))
 for game in games:
     #Player's Elo
@@ -22,7 +26,7 @@ for game in games:
     time_m = re.search(r'(TimeControl\s")(\d+\+)(\d+")',game)
     data['Time_Control'].append(time_m.group(2)[:-1] if time_m is not None else None)
     data['Increment'].append(time_m.group(3)[:-1] if time_m is not None else None)
-    #Engine eval
+    #Engine evaluation
     data['Evaluation'].append(re.findall(r'%eval\s(#-?\d{1,2}|-?\d{1,2}\.?\d{1,2})', game))
     #Player clock
     data['Players_Clock'].append(re.findall(r'%clk\s(\d:\d\d:\d\d)', game))
@@ -36,6 +40,22 @@ for game in games:
     data['Moves'].append(re.sub(r'(\d\.)(\s)(\w)',r'\1\3',moves))
 
 games_df=pd.DataFrame(data=data, columns=columns)
-games_df.to_csv('games.zip',sep =';',compression='zip')
 
+
+def GetTermination(df):
+#Function to diferentiate win by checkmate and resignation
+    games = df['Moves'].to_numpy()
+    termination = df['Termination'].to_numpy()
+    for i, game in enumerate(games):
+        last_move = re.search(r'(\d{1,2}\.| ).{1,7}$',game).group(0)
+        if last_move.endswith('#'):
+            termination[i]='Checkmate'
+        else:
+            if termination[i] == 'Normal':
+                termination[i]='Resignation'
+    return termination
+                
+games_df['Termination'] =GetTermination(games_df)
+ 
+games_df.to_csv('games.zip',sep =';',compression='zip')   
 
