@@ -5,8 +5,9 @@ import pickle
 import re
 #%%
 #Future dataframe columns name list
-columns=['White_Elo','Black_Elo','Result', 'Opening','Variation','Time_Control',
-       'Increment','Evaluation','Players_Clock','Termination','Moves']
+columns=['White_Elo','Black_Elo','Result', 'Opening','Variation',
+         'Time_Control','Increment','Evaluation','Players_Clock','Termination',
+         'Moves']
 #dictionary to store the data
 data={c:[] for c in columns}
 #Time to revome data of interest in the dataframe
@@ -24,23 +25,37 @@ for game in games:
     
     #Time control and increment
     time_m = re.search(r'(TimeControl\s")(\d+\+)(\d+")',game)
-    data['Time_Control'].append(time_m.group(2)[:-1] if time_m is not None else None)
-    data['Increment'].append(time_m.group(3)[:-1] if time_m is not None else None)
+    data['Time_Control'].append(time_m.group(2)[:-1] if time_m is not None 
+                                else None)
+    data['Increment'].append(time_m.group(3)[:-1] if time_m is not None 
+                             else None)
     #Engine evaluation
-    data['Evaluation'].append(re.findall(r'%eval\s(#-?\d{1,2}|-?\d{1,2}\.?\d{1,2})', game))
+    data['Evaluation'].append(re.findall(
+        r'%eval\s(#-?\d{1,2}|-?\d{1,2}\.?\d{1,2})', game))
     #Player clock
     data['Players_Clock'].append(re.findall(r'%clk\s(\d:\d\d:\d\d)', game))
     #Type of termination (Resign, mate or timeout)
-    data['Termination'].append(re.search(r'(Termination\s")(.+")',game).group(2)[:-1])
+    data['Termination'].append(
+        re.search(r'(Termination\s")(.+")',game).group(2)[:-1])
     #moves played
-    moves = [x+y for x, y in re.findall(r'(\d{1,2}\.{1,3}\s.{1,6})(\d|#|\+|\w)', game)]
+    moves = [x+y for x, y in re.findall(r'(\d{1,2}\.{1,3}\s.{1,6})(\d|#|\+|\w)'
+                                        ,game)]
     sep=' '
     moves = sep.join(moves)
     moves= re.sub(r'(\n|\d{1,3}\.{3}\s?|\$\d\s)','',moves)
+    moves=re.sub(r'\s\$\d','',moves) #Read comment bellow
     data['Moves'].append(re.sub(r'(\d\.)(\s)(\w)',r'\1\3',moves))
 
 games_df=pd.DataFrame(data=data, columns=columns)
 
+# =============================================================================
+# During the EDA I noticed that the resub hat not removed the "$\d" in end of
+# the game. When I noticed this I've had soem problems in my computer and lost 
+# the games.pickle, so I'm adding this here as not that I've loaded the csv file
+# and rerunning, removed "$/d" at the end and ran the GetTermination function.
+# I also adde the re.sub above as if I had ran it at first.
+# 
+# =============================================================================
 
 def GetTermination(df):
 #Function to diferentiate win by checkmate and resignation
